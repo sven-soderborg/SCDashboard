@@ -4,5 +4,6 @@ pandas==2.1.1
 Pillow==10.1.0
 plotly==5.17.0
 pyarrow==13.0.0
+dash-loading-spinners==1.0.0
 gunicorn
 dash-tools

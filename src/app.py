@@ -5,6 +5,7 @@ import plotly.express as px
 import pandas as pd
 from PIL import Image
 import numpy as np
+import dash_loading_spinners as dls
 
 # Load data
 data = pd.read_feather('data/ut_data.feather')
@@ -27,6 +28,9 @@ introduction = html.Div([html.H1("Utah’s Degree Decision: Major Choices, Major
                         html.P("""Using data from the College Scorecard, we've created a tool to gain a better understanding
                                 of the short-term earnings potential for various majors across the predominent universities in Utah.""")])
 
+discussion = html.Div([html.H1("Discussion"),
+                       html.P("""Discuss the variables here--include some kind of table?""")])
+
 visualization = html.Div([html.H1("Median Earnings by Major and University"),
     
     # Dropdown for selecting universities
@@ -45,14 +49,17 @@ visualization = html.Div([html.H1("Median Earnings by Major and University"),
         options=[{'label': 'All Majors', 'value': 'All Majors'}, {'value': 'Highest', 'label': 'Top Earning Majors'}, 
                  {'value': 'Lowest', 'label': 'Bottom Earning Majors'}] + [{'label': major, 'value': major} for major in unique_majors],
         multi=True,
-        value='Highest'
-    ),
-    
-    # Scatter plot for displaying median earnings
-    dcc.Graph(id='earnings-scatter')])
+        value='All Majors'
+    )])
+
+visual_description = html.Div([html.H1("Visual Description"),
+                               html.P("""Describe the visualization here""")])
+
+conclusion = html.Div([html.H1("Conclusion"),
+                       html.P("""Conclude here""")])
 
 # App layout
-app.layout = html.Div([introduction, visualization])
+app.layout = html.Div([introduction, discussion, visualization, dls.Hash(html.Div(dcc.Graph(id='earnings-scatter'))), visual_description, conclusion])
 
 # Callback function to update the scatter plot based on user selections
 @app.callback(
@@ -61,23 +68,45 @@ app.layout = html.Div([introduction, visualization])
      Input('major-dropdown', 'value')]
 )
 def update_scatter(selected_universities, selected_majors):
-    # Add predefined lists of majors to the list of majors to be displayed
-    majors = []
-    if 'Highest' in selected_majors:
-        majors += top_10_majors
-        if type(selected_majors) is list:
-            selected_majors.remove('Highest')
-    if 'Lowest' in selected_majors:
-        majors += bottom_10_majors
-        if type(selected_majors) is list:
-            selected_majors.remove('Lowest')
-    if 'All Majors' in selected_majors:
-        majors += unique_majors
-        if type(selected_majors) is list:
-            selected_majors.remove('All Majors')
-    
-    # Add rest of selections to the list of majors to be displayed
-    majors += selected_majors
+    if selected_majors:
+        # Add predefined lists of majors to the list of majors to be displayed
+        majors = []
+        if 'Highest' in selected_majors:
+            majors += top_10_majors
+            if type(selected_majors) is list:
+                selected_majors.remove('Highest')
+        if 'Lowest' in selected_majors:
+            majors += bottom_10_majors
+            if type(selected_majors) is list:
+                selected_majors.remove('Lowest')
+        if 'All Majors' in selected_majors:
+            majors += unique_majors
+            if type(selected_majors) is list:
+                selected_majors.remove('All Majors')
+        
+        # Add rest of selections to the list of majors to be displayed
+        majors += selected_majors
+    else: # Nothing selected
+        return {"layout": {
+                    "xaxis": {
+                        "visible": False
+                    },
+                    "yaxis": {
+                        "visible": False
+                    },
+                    "annotations": [
+                        {
+                            "text": "No matching data found",
+                            "xref": "paper",
+                            "yref": "paper",
+                            "showarrow": False,
+                            "font": {
+                                "size": 28
+                            }
+                        }
+                    ]
+                }
+            }
     
     # Filter data based on selected universities and majors
     filtered_data = data[(data['instnm'].isin(selected_universities)) & 
@@ -92,10 +121,10 @@ def update_scatter(selected_universities, selected_majors):
         x='tot_mdn_earn_4yr', 
         y='earn_mdn_4yr', 
         hover_name='instnm',
-        hover_data={'mdcost_all': ':$,.0f', 'cipdesc': True, 'tot_mdn_earn_4yr': ':$,.0f', 'earn_mdn_4yr': ':$,.0f'},
+        hover_data={'cipdesc': True, 'tot_mdn_earn_4yr': ':$,.0f', 'earn_mdn_4yr': ':$,.0f'},
         labels={'cipdesc': 'Major', 'earn_mdn_4yr': 'University Level Median Earnings 4yr', 
                 'tot_mdn_earn_4yr': 'Median Earnings by Major Across Universities', 
-                'instnm': 'University', 'mdcost_all': 'Median Cost of Attendance'}
+                'instnm': 'University'}
     )
     fig.update_traces(marker_color="rgba(0,0,0,0)")
 
@@ -112,8 +141,8 @@ def update_scatter(selected_universities, selected_majors):
                 yanchor="middle",
                 x=row["tot_mdn_earn_4yr"],
                 y=row["earn_mdn_4yr"],
-                sizex=maxi * .02,
-                sizey=maxi * .02,
+                sizex=2000,
+                sizey=2000,
                 sizing="contain",
                 opacity=1,
                 layer="above"
