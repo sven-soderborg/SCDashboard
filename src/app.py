@@ -13,6 +13,7 @@ data.dropna(subset=['earn_mdn_4yr'], inplace=True) # Drop rows with missing earn
 
 # Create a Dash app instance
 app = dash.Dash(__name__)
+server = app.server
 
 # Unique universities and majors
 unique_universities = data['instnm'].unique().tolist()
