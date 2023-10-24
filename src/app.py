@@ -49,7 +49,7 @@ visualization = html.Div([html.H1("Median Earnings by Major and University"),
         options=[{'label': 'All Majors', 'value': 'All Majors'}, {'value': 'Highest', 'label': 'Top Earning Majors'}, 
                  {'value': 'Lowest', 'label': 'Bottom Earning Majors'}] + [{'label': major, 'value': major} for major in unique_majors],
         multi=True,
-        value='All Majors'
+        value='Highest'
     )])
 
 visual_description = html.Div([html.H1("Visual Description"),
