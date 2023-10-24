@@ -121,10 +121,10 @@ def update_scatter(selected_universities, selected_majors):
         x='tot_mdn_earn_4yr', 
         y='earn_mdn_4yr', 
         hover_name='instnm',
-        hover_data={'cipdesc': True, 'tot_mdn_earn_4yr': ':$,.0f', 'earn_mdn_4yr': ':$,.0f'},
+        hover_data={'netprice': ':$,.0f', 'cipdesc': True, 'tot_mdn_earn_4yr': ':$,.0f', 'earn_mdn_4yr': ':$,.0f'},
         labels={'cipdesc': 'Major', 'earn_mdn_4yr': 'University Level Median Earnings 4yr', 
                 'tot_mdn_earn_4yr': 'Median Earnings by Major Across Universities', 
-                'instnm': 'University'}
+                'instnm': 'University', 'netprice': 'Net Price',}
     )
     fig.update_traces(marker_color="rgba(0,0,0,0)")
 
