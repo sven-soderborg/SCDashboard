@@ -7,7 +7,7 @@ from PIL import Image
 import numpy as np
 
 # Load data
-data = pd.read_feather('src/data/ut_data.feather')
+data = pd.read_feather('data/ut_data.feather')
 data.dropna(subset=['earn_mdn_4yr'], inplace=True) # Drop rows with missing earnings data
 
 
@@ -105,7 +105,7 @@ def update_scatter(selected_universities, selected_majors):
         name = row['instnm'].replace(' ', '-')
         fig.add_layout_image(
             dict(
-                source=Image.open(f"src/logos/{name}.png"),
+                source=Image.open(f"logos/{name}.png"),
                 xref="x",
                 yref="y",
                 xanchor="center",
