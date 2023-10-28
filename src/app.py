@@ -1,14 +1,14 @@
 import dash
+import time
 from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
 from PIL import Image
-import numpy as np
 import dash_loading_spinners as dls
 
 # Load data
-data = pd.read_feather('data/ut_data.feather')
+data = pd.read_feather('src/data/ut_data.feather')
 data.dropna(subset=['earn_mdn_4yr'], inplace=True) # Drop rows with missing earnings data
 
 
@@ -22,14 +22,10 @@ unique_majors = data['cipdesc'].unique().tolist()
 top_10_majors = data.groupby('cipdesc')['earn_mdn_4yr'].mean().nlargest(10).index.tolist()
 bottom_10_majors = data.groupby('cipdesc')['earn_mdn_4yr'].mean().nsmallest(10).index.tolist()
 
-introduction = html.Div([html.H1("Utah’s Degree Decision: Major Choices, Major Futures"),
-                         html.P("""Deciding on which university to attend, and what to study once you're there can be stressful.
-                                One question that many ask themselves may be \"Is this going to be worth it?\""""),
-                        html.P("""Using data from the College Scorecard, we've created a tool to gain a better understanding
-                                of the short-term earnings potential for various majors across the predominent universities in Utah.""")])
 
-discussion = html.Div([html.H1("Discussion"),
-                       html.P("""Discuss the variables here--include some kind of table?""")])
+# Preload all university logos
+logo_directory = "src/logos/"
+university_logos = {university.replace(' ', '-'): Image.open(logo_directory + university.replace(' ', '-') + ".png") for university in unique_universities}
 
 visualization = html.Div([html.H1("Median Earnings by Major and University"),
     
@@ -52,14 +48,9 @@ visualization = html.Div([html.H1("Median Earnings by Major and University"),
         value='All Majors'
     )])
 
-visual_description = html.Div([html.H1("Visual Description"),
-                               html.P("""Describe the visualization here""")])
-
-conclusion = html.Div([html.H1("Conclusion"),
-                       html.P("""Conclude here""")])
 
 # App layout
-app.layout = html.Div([introduction, discussion, visualization, dls.Hash(html.Div(dcc.Graph(id='earnings-scatter'))), visual_description, conclusion])
+app.layout = html.Div([visualization, dls.Hash(html.Div(dcc.Graph(id='earnings-scatter')))])
 
 # Callback function to update the scatter plot based on user selections
 @app.callback(
@@ -68,6 +59,7 @@ app.layout = html.Div([introduction, discussion, visualization, dls.Hash(html.Di
      Input('major-dropdown', 'value')]
 )
 def update_scatter(selected_universities, selected_majors):
+    t0 = time.time()
     if selected_majors:
         # Add predefined lists of majors to the list of majors to be displayed
         majors = []
@@ -121,33 +113,37 @@ def update_scatter(selected_universities, selected_majors):
         x='tot_mdn_earn_4yr', 
         y='earn_mdn_4yr', 
         hover_name='instnm',
-        hover_data={'cipdesc': True, 'tot_mdn_earn_4yr': ':$,.0f', 'earn_mdn_4yr': ':$,.0f'},
+        hover_data={'net_price': ':$,.0f', 'cipdesc': True, 'tot_mdn_earn_4yr': ':$,.0f', 'earn_mdn_4yr': ':$,.0f'},
         labels={'cipdesc': 'Major', 'earn_mdn_4yr': 'University Level Median Earnings 4yr', 
                 'tot_mdn_earn_4yr': 'Median Earnings by Major Across Universities', 
-                'instnm': 'University'}
+                'instnm': 'University', 'net_price': 'Net Price'}
     )
     fig.update_traces(marker_color="rgba(0,0,0,0)")
-
-    maxDim = filtered_data[["tot_mdn_earn_4yr", "earn_mdn_4yr"]].max().idxmax()
-    maxi = filtered_data[maxDim].max()
-    for i, row in filtered_data.iterrows():
+    
+    # Access preloaded logos and add them to the figure
+    t1 = time.time()
+    for _, row in filtered_data.iterrows():
         name = row['instnm'].replace(' ', '-')
-        fig.add_layout_image(
-            dict(
-                source=Image.open(f"logos/{name}.png"),
-                xref="x",
-                yref="y",
-                xanchor="center",
-                yanchor="middle",
-                x=row["tot_mdn_earn_4yr"],
-                y=row["earn_mdn_4yr"],
-                sizex=2000,
-                sizey=2000,
-                sizing="contain",
-                opacity=1,
-                layer="above"
+        logo = university_logos[name]
+        if logo:
+            fig.add_layout_image(
+                dict(
+                    source=logo,
+                    xref="x",
+                    yref="y",
+                    xanchor="center",
+                    yanchor="middle",
+                    x=row["tot_mdn_earn_4yr"],
+                    y=row["earn_mdn_4yr"],
+                    sizex=2000,
+                    sizey=2000,
+                    sizing="contain",
+                    opacity=1,
+                    layer="above"
+                )
             )
-        )
+    print(f"Took {time.time() - t1} seconds to add logos")
+
 
     # Update Appearance
     fig.update_layout(height=800, width=1500, plot_bgcolor="#FFFFFF", hovermode="closest",
@@ -158,21 +154,10 @@ def update_scatter(selected_universities, selected_majors):
     fig.update_xaxes(tickprefix="$")
     fig.update_yaxes(tickprefix="$")
 
-    # Add labels for the majors
-    # txt_y = filtered_data['earn_mdn_4yr'].min() - 5000
-    # placed_xs = []
-    # for major in filtered_data['cipdesc'].unique():
-    #     filtered_major = filtered_data[filtered_data['cipdesc'] == major]
-    #     txt_x = filtered_major['tot_mdn_earn_4yr'].mean()
-    #     cipcode = filtered_major['cipcode'].iloc[0]
-    #     if any(abs(txt_x - item) <= 900 for item in placed_xs):
-    #         txt_y += 1000
-    #     fig.add_annotation(x=txt_x, y=txt_y, text=cipcode, showarrow=False, font=dict(size=12), hovertext=f'{major}\n${txt_x:.0f}', borderpad=10)
-    #     placed_xs.append(txt_x)
-
+    print(f"Took {time.time() - t0} seconds to update scatter")
     
     # Return the figure to be displayed
     return fig
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
