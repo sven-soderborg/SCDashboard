@@ -8,7 +8,7 @@ from PIL import Image
 import dash_loading_spinners as dls
 
 # Load data
-data = pd.read_feather('src/data/ut_data.feather')
+data = pd.read_feather('data/ut_data.feather')
 data.dropna(subset=['earn_mdn_4yr'], inplace=True) # Drop rows with missing earnings data
 
 
@@ -24,7 +24,7 @@ bottom_10_majors = data.groupby('cipdesc')['earn_mdn_4yr'].mean().nsmallest(10).
 
 
 # Preload all university logos
-logo_directory = "src/logos/"
+logo_directory = "logos/"
 university_logos = {university.replace(' ', '-'): Image.open(logo_directory + university.replace(' ', '-') + ".png") for university in unique_universities}
 
 visualization = html.Div([html.H1("Median Earnings by Major and University"),
