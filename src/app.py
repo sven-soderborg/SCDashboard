@@ -160,4 +160,4 @@ def update_scatter(selected_universities, selected_majors):
     return fig
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
