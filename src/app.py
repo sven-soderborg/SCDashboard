@@ -4,7 +4,6 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
-from PIL import Image
 import dash_loading_spinners as dls
 
 # Load data
@@ -22,12 +21,7 @@ unique_majors = data['cipdesc'].unique().tolist()
 top_10_majors = data.groupby('cipdesc')['earn_mdn_4yr'].mean().nlargest(10).index.tolist()
 bottom_10_majors = data.groupby('cipdesc')['earn_mdn_4yr'].mean().nsmallest(10).index.tolist()
 
-
-# Preload all university logos
-logo_directory = "logos/"
-university_logos = {university.replace(' ', '-'): Image.open(logo_directory + university.replace(' ', '-') + ".png") for university in unique_universities}
-
-visualization = html.Div([html.H1("Median Earnings by Major and University"),
+options_menu = html.Div([html.H1("Median Earnings by Major and University"),
     
     # Dropdown for selecting universities
     html.Label("Select Universities:"),
@@ -42,15 +36,15 @@ visualization = html.Div([html.H1("Median Earnings by Major and University"),
     html.Label("Select Majors:"),
     dcc.Dropdown(
         id='major-dropdown',
-        options=[{'label': 'All Majors', 'value': 'All Majors'}, {'value': 'Highest', 'label': 'Top Earning Majors'}, 
-                 {'value': 'Lowest', 'label': 'Bottom Earning Majors'}] + [{'label': major, 'value': major} for major in unique_majors],
+        options=[{'label': 'All Majors', 'value': 'All Majors'}, {'value': 'Highest', 'label': 'Top 10 Earning Majors'}, 
+                 {'value': 'Lowest', 'label': 'Bottom 10 Earning Majors'}] + [{'label': major, 'value': major} for major in unique_majors],
         multi=True,
-        value='All Majors'
+        value='Highest'
     )])
 
 
 # App layout
-app.layout = html.Div([visualization, dls.Hash(html.Div(dcc.Graph(id='earnings-scatter')))])
+app.layout = html.Div([options_menu, dls.Hash(html.Div(dcc.Graph(id='earnings-scatter')))])
 
 # Callback function to update the scatter plot based on user selections
 @app.callback(
@@ -122,19 +116,17 @@ def update_scatter(selected_universities, selected_majors):
     
     # Access preloaded logos and add them to the figure
     t1 = time.time()
-    for _, row in filtered_data.iterrows():
-        name = row['instnm'].replace(' ', '-')
-        logo = university_logos[name]
-        if logo:
-            fig.add_layout_image(
+    for row in filtered_data.values:
+        name = row[1].replace(' ', '-')
+        fig.add_layout_image(
                 dict(
-                    source=logo,
+                    source=f"https://raw.githubusercontent.com/sven-soderborg/SCDashboard/main/src/logos/{name}.png",
                     xref="x",
                     yref="y",
                     xanchor="center",
                     yanchor="middle",
-                    x=row["tot_mdn_earn_4yr"],
-                    y=row["earn_mdn_4yr"],
+                    x=row[13],
+                    y=row[8],
                     sizex=2000,
                     sizey=2000,
                     sizing="contain",
@@ -146,11 +138,10 @@ def update_scatter(selected_universities, selected_majors):
 
 
     # Update Appearance
-    fig.update_layout(height=800, width=1500, plot_bgcolor="#FFFFFF", hovermode="closest",
-                      title=dict(text="4 Year Median Earnings by Major and University", font=dict(size=25), xanchor='center', yanchor='top',
-                                 y=1, x=.5),
+    fig.update_layout(autosize=True, plot_bgcolor="#FFFFFF", 
                       xaxis_title=dict(text="Major Median Earnings Across Selected Universities", font=dict(size=18)),
-                      yaxis_title=dict(text="Major Median Earnings by University", font=dict(size=18)))
+                      yaxis_title=dict(text="Major Median Earnings by University", font=dict(size=18)),
+                      dragmode="pan")
     fig.update_xaxes(tickprefix="$")
     fig.update_yaxes(tickprefix="$")
 
@@ -160,4 +151,4 @@ def update_scatter(selected_universities, selected_majors):
     return fig
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
