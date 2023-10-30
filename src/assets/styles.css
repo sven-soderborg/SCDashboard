@@ -1,0 +1,33 @@
+/* Global settings */
+body {
+    font-family: Arial, sans-serif;
+}
+
+/* Container settings */
+.container {
+    margin: 20px;
+}
+
+/* Row settings */
+.row {
+    display: flex;
+    min-height: 800px;
+    flex-wrap: wrap;
+    margin-left: -15px;
+    margin-right: -15px;
+}
+
+/* Column settings */
+.four.columns {
+    width: 20%;
+    padding-left: 15px;
+    padding-right: 15px;
+    box-sizing: border-box;
+}
+
+.eight.columns {
+    width: 80%;
+    padding-left: 15px;
+    padding-right: 15px;
+    box-sizing: border-box;
+}

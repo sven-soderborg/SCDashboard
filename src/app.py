@@ -1,10 +1,10 @@
 import dash
-import time
 from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
 import dash_loading_spinners as dls
+from PIL import Image
 
 # Load data
 data = pd.read_feather('data/ut_data.feather')
@@ -18,33 +18,45 @@ server = app.server
 # Unique universities and majors
 unique_universities = data['instnm'].unique().tolist()
 unique_majors = data['cipdesc'].unique().tolist()
-top_10_majors = data.groupby('cipdesc')['earn_mdn_4yr'].mean().nlargest(10).index.tolist()
-bottom_10_majors = data.groupby('cipdesc')['earn_mdn_4yr'].mean().nsmallest(10).index.tolist()
-
-options_menu = html.Div([html.H1("Median Earnings by Major and University"),
-    
-    # Dropdown for selecting universities
-    html.Label("Select Universities:"),
-    dcc.Dropdown(
-        id='university-dropdown',
-        options=[{'label': university, 'value': university} for university in unique_universities],
-        multi=True,
-        value=unique_universities  # Default to all universities
-    ),
-    
-    # Dropdown for selecting majors
-    html.Label("Select Majors:"),
-    dcc.Dropdown(
-        id='major-dropdown',
-        options=[{'label': 'All Majors', 'value': 'All Majors'}, {'value': 'Highest', 'label': 'Top 10 Earning Majors'}, 
-                 {'value': 'Lowest', 'label': 'Bottom 10 Earning Majors'}] + [{'label': major, 'value': major} for major in unique_majors],
-        multi=True,
-        value='Highest'
-    )])
+top_10_majors = data.groupby('cipdesc')['tot_mdn_earn_4yr'].mean().nlargest(10).index.tolist()
+bottom_10_majors = data.groupby('cipdesc')['tot_mdn_earn_4yr'].mean().nsmallest(10).index.tolist()
 
 
 # App layout
-app.layout = html.Div([options_menu, dls.Hash(html.Div(dcc.Graph(id='earnings-scatter')))])
+app.layout = html.Div([
+    html.H1("Earnings Outcomes by Major and University", style={'textAlign': 'center'}),
+
+    html.Div([
+        html.Div([
+            # Dropdown for selecting universities
+            html.Label("Select Universities:"),
+            dcc.Dropdown(
+                id='university-dropdown',
+                options=[{'label': university, 'value': university} for university in unique_universities],
+                multi=True, 
+                value=unique_universities  # Default to all universities
+            ),
+
+            # Dropdown for selecting majors
+            html.Label("Select Majors:"),
+            dcc.Dropdown(
+                id='major-dropdown',
+                options=[{'label': 'All Majors', 'value': 'All Majors'}, 
+                         {'value': 'Highest', 'label': 'Top 10 Earning Majors'}, 
+                         {'value': 'Lowest', 'label': 'Bottom 10 Earning Majors'}] + 
+                         [{'label': major, 'value': major} for major in unique_majors],
+                multi=True,
+                value='Highest'
+                
+    )], className='four columns'),
+
+    html.Div([
+        dls.Hash(
+            html.Div(dcc.Graph(id='earnings-scatter')))
+    ], className='eight columns')
+    
+    ], className='row')
+], className='container')
 
 # Callback function to update the scatter plot based on user selections
 @app.callback(
@@ -53,7 +65,6 @@ app.layout = html.Div([options_menu, dls.Hash(html.Div(dcc.Graph(id='earnings-sc
      Input('major-dropdown', 'value')]
 )
 def update_scatter(selected_universities, selected_majors):
-    t0 = time.time()
     if selected_majors:
         # Add predefined lists of majors to the list of majors to be displayed
         majors = []
@@ -106,8 +117,8 @@ def update_scatter(selected_universities, selected_majors):
         filtered_data, 
         x='tot_mdn_earn_4yr', 
         y='earn_mdn_4yr', 
-        hover_name='instnm',
-        hover_data={'net_price': ':$,.0f', 'cipdesc': True, 'tot_mdn_earn_4yr': ':$,.0f', 'earn_mdn_4yr': ':$,.0f'},
+        hover_name='cipdesc',
+        hover_data={'net_price': ':$,.0f', 'instnm': True, 'tot_mdn_earn_4yr': ':$,.0f', 'earn_mdn_4yr': ':$,.0f'},
         labels={'cipdesc': 'Major', 'earn_mdn_4yr': 'University Level Median Earnings 4yr', 
                 'tot_mdn_earn_4yr': 'Median Earnings by Major Across Universities', 
                 'instnm': 'University', 'net_price': 'Net Price'}
@@ -115,7 +126,6 @@ def update_scatter(selected_universities, selected_majors):
     fig.update_traces(marker_color="rgba(0,0,0,0)")
     
     # Access preloaded logos and add them to the figure
-    t1 = time.time()
     for row in filtered_data.values:
         name = row[1].replace(' ', '-')
         fig.add_layout_image(
@@ -127,25 +137,22 @@ def update_scatter(selected_universities, selected_majors):
                     yanchor="middle",
                     x=row[13],
                     y=row[8],
-                    sizex=2000,
-                    sizey=2000,
+                    sizex=3000,
+                    sizey=3000,
                     sizing="contain",
                     opacity=1,
                     layer="above"
                 )
             )
-    print(f"Took {time.time() - t1} seconds to add logos")
-
-
+        
     # Update Appearance
     fig.update_layout(autosize=True, plot_bgcolor="#FFFFFF", 
                       xaxis_title=dict(text="Major Median Earnings Across Selected Universities", font=dict(size=18)),
                       yaxis_title=dict(text="Major Median Earnings by University", font=dict(size=18)),
                       dragmode="pan")
-    fig.update_xaxes(tickprefix="$")
-    fig.update_yaxes(tickprefix="$")
+    fig.update_xaxes(tickprefix="$", automargin=True)
+    fig.update_yaxes(tickprefix="$", automargin=True)
 
-    print(f"Took {time.time() - t0} seconds to update scatter")
     
     # Return the figure to be displayed
     return fig
