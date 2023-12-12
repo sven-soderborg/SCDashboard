@@ -3,7 +3,10 @@ library(dplyr)
 library(ggplot2)
 library(tidyr)
 
-df <- read_feather("../data/ut_data.feather") %>%
+setwd("C:/Users/svens/repos/SCDashboard/src/data/")
+
+
+df <- read_feather("ut_data.feather") %>%
   filter(complete.cases(.))
 
 grouped <- df %>%
@@ -30,16 +33,17 @@ p <- ggplot(univ_earn_long, aes(x = instnm, y = value, fill = metric)) +
             vjust = 0.5) +
   coord_flip() +
   labs(title = "4-Year Earnings and Net Price of Attendance by University", 
-       x = "University", y = "US Dollars", fill = "Legend") +
+       x = "University", y = "US Dollars", fill = "Legend", caption = "Source: College Scorecard",) +
   scale_fill_manual(
     values = c("earn_mdn_4yr" = "#38a14d", "net_price" = "#FF6347"),
     labels = c("4 Year Median Earnings", "Net Price of Attendance")) +
   scale_y_continuous(labels = scales::label_dollar()) +
   theme_minimal() +
   theme(
-    plot.title = element_text(size = 24, face = "bold", hjust=.5),              
+    plot.title = element_text(size = 24, face = "bold", hjust=-5),              
     axis.title.x = element_text(size = 16, face = "bold"),
     axis.title.y = element_text(size = 16, face = "bold"),
+    plot.caption = element_text(size = 10),
     axis.text.x = element_text(size = 14),
     axis.text.y = element_text(size = 14),
     legend.title = element_text(size = 16),
@@ -51,4 +55,4 @@ p <- ggplot(univ_earn_long, aes(x = instnm, y = value, fill = metric)) +
   expand_limits(y = c(NA, max(univ_earn_long$value) * 1.1)) # Increase the x-axis limits (for a flipped plot)
 
 p
-ggsave("C:/Users/svens/My Drive/MSES/univ-barchart.png", dpi=300, width=12, height = 8)
+ggsave("../plots/univ-barchart.png", dpi=300, width=12, height = 8, bg="white")

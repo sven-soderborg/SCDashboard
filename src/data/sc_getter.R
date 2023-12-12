@@ -4,7 +4,7 @@ library(dplyr)
 library(arrow)
 
 # Set working directory
-setwd("C:/Users/svens/Documents/UTSC_Website")
+setwd("C:/Users/svens/repos/SCDashboard/src/data/")
 
 # Load API Key
 load_dot_env()
@@ -28,6 +28,12 @@ ut_df <- sc_init() %>%
   select(-npt4_pub, -npt4_priv) # Drop npt4_pub and npt4_priv columns
 
 
+cip_df <- read.csv("cip_codes.csv") %>%
+  mutate(cipfield = substr(CIPFamily, 2, 3)) %>%
+  group_by(cipfield) %>%
+  summarise(field_desc = first(CIPTitle)) %>%
+  mutate(field_desc = stringr::str_to_title(field_desc))
+
 
 # Calculate the average earnings by major across all schools
 major_earnings <- ut_df %>%
@@ -37,7 +43,7 @@ major_earnings <- ut_df %>%
 
 # Add the total median earnings to the main dataframe
 ut_df <- ut_df %>%
-  left_join(major_earnings, by = "cipcode")
+  left_join(major_earnings, by = "cipcode") %>%
+  left_join(cip_df, by = "cipfield")
 
-write_feather(ut_df, "data/ut_data.feather")
-write_csv_arrow(ut_df, "data/ut_data.csv")
+write_feather(ut_df, "ut_data.feather")
